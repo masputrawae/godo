@@ -17,10 +17,21 @@ func NewTodo(db *sql.DB) *Todo {
 }
 
 func (t *Todo) Create(ctx context.Context, p model.TodoCreatePayload) (int, error) {
-	q := t.sq.Insert("todos").Columns("task").Values(p.Task)
+	q := t.sq.
+		Insert("todos").
+		Columns("task").Values(p.Task).
+		Columns("user_id").Values(p.UserID)
 
 	if p.Due != nil {
 		q = q.Columns("due").Values(*p.Due)
+	}
+
+	if p.PriorityID != nil {
+		q = q.Columns("priority_id").Values(*p.PriorityID)
+	}
+
+	if p.StatusID != nil {
+		q = q.Columns("status_id").Values(*p.StatusID)
 	}
 
 	res, err := q.ExecContext(ctx)
@@ -36,9 +47,9 @@ func (t *Todo) Create(ctx context.Context, p model.TodoCreatePayload) (int, erro
 	return int(id), nil
 }
 
-func (t *Todo) FindAll(ctx context.Context) ([]model.Todo, error) {
-	q := "SELECT id, task, done, due, created_at, updated_at, user_id, status_id, priority_id FROM todos"
-	rows, err := t.db.QueryContext(ctx, q)
+func (t *Todo) FindAll(ctx context.Context, userID int) ([]model.Todo, error) {
+	q := "SELECT id, task, done, due, created_at, updated_at, user_id, status_id, priority_id FROM todos WHERE user_id = ?"
+	rows, err := t.db.QueryContext(ctx, q, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -56,12 +67,23 @@ func (t *Todo) FindAll(ctx context.Context) ([]model.Todo, error) {
 	return results, rows.Err()
 }
 
-func (t *Todo) Update(ctx context.Context, todoID int, p model.TodoUpdatePayload) error {
+func (t *Todo) FindByID(ctx context.Context, userID, todoID int) (model.Todo, error) {
+	q := "SELECT id, task, done, due, created_at, updated_at, user_id, status_id, priority_id FROM todos WHERE user_id = ? AND id = ?"
+	return t.scan(t.db.QueryRowContext(ctx, q, userID, todoID))
+}
+
+func (t *Todo) Update(ctx context.Context, p model.TodoUpdatePayload) error {
 	if p.Task == nil && p.Done == nil && p.Due == nil && p.StatusID == nil && p.PriorityID == nil {
 		return nil
 	}
 
-	q := t.sq.Update("todos").Where(sq.Eq{"id": todoID}).Set("updated_at", "CURRENT_TIMESTAMP")
+	q := t.sq.
+		Update("todos").
+		Where(sq.And{
+			sq.Eq{"id": p.TodoID},
+			sq.Eq{"user_id": p.UserID},
+		}).
+		Set("updated_at", "CURRENT_TIMESTAMP")
 
 	if p.Task != nil {
 		q = q.Set("task", *p.Task)
@@ -87,8 +109,8 @@ func (t *Todo) Update(ctx context.Context, todoID int, p model.TodoUpdatePayload
 	return err
 }
 
-func (t *Todo) Delete(ctx context.Context, todoID int) error {
-	_, err := t.db.ExecContext(ctx, "DELETE FROM todos WHERE id = ?", todoID)
+func (t *Todo) Delete(ctx context.Context, userID int, todoID int) error {
+	_, err := t.db.ExecContext(ctx, "DELETE FROM todos WHERE id = ? AND user_id = ?", todoID, userID)
 	return err
 }
 
