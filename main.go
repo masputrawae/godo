@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"godo/internal/database"
 	"godo/internal/repo"
+	"godo/internal/service"
 )
 
 func main() {
@@ -11,10 +12,14 @@ func main() {
 	defer db.Close()
 
 	// ===== REPOSITORIES =====
-	_ = repo.NewUser(db)
-	_ = repo.NewTodo(db)
-	_ = repo.NewStatus(db)
-	_ = repo.NewPriority(db)
+	user := repo.NewUser(db)
+	todo := repo.NewTodo(db)
+	status := repo.NewStatus(db)
+	priority := repo.NewPriority(db)
+
+	// ===== SERVICES =====
+	_ = service.NewTodo(todo, status, priority)
+	_ = service.NewUser(user)
 
 	fmt.Println("🐮 MOooo....")
 }
