@@ -21,6 +21,11 @@ type UserUpdatePayload struct {
 	Password *string
 }
 
+type UserLoginPayload struct {
+	Username string
+	Password string
+}
+
 type Status struct {
 	ID    int
 	Emoji string
@@ -46,11 +51,16 @@ type Todo struct {
 }
 
 type TodoCreatePayload struct {
-	Task string
-	Due  *time.Time
+	UserID     int
+	Task       string
+	Due        *time.Time
+	StatusID   *int
+	PriorityID *int
 }
 
 type TodoUpdatePayload struct {
+	UserID     int
+	TodoID     int
 	Task       *string
 	Done       *bool
 	Due        *time.Time
