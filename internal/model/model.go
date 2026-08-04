@@ -9,6 +9,18 @@ type User struct {
 	Password string
 }
 
+type UserCreatePayload struct {
+	Username string
+	Email    string
+	Password string
+}
+
+type UserUpdatePayload struct {
+	Username *string
+	Email    *string
+	Password *string
+}
+
 type Status struct {
 	ID    int
 	Emoji string
@@ -24,10 +36,24 @@ type Priority struct {
 type Todo struct {
 	ID         int
 	Task       string
-	Done       *time.Time
+	Done       bool
+	Due        *time.Time
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	UserID     int
 	StatusID   int
 	PriorityID int
+}
+
+type TodoCreatePayload struct {
+	Task string
+	Due  *time.Time
+}
+
+type TodoUpdatePayload struct {
+	Task       *string
+	Done       *bool
+	Due        *time.Time
+	StatusID   *int
+	PriorityID *int
 }
