@@ -16,3 +16,8 @@ type UserCreatePayload struct {
 	Password string
 	Email    string
 }
+
+type UserLoginPayload struct {
+	Username string
+	Password string
+}
