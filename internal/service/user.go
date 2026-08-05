@@ -21,8 +21,6 @@ var (
 	ErrEmailInvalid               = errors.New("email invalid")
 	ErrUserAccountNotFound        = errors.New("user account not found")
 	ErrPasswordCannotSame         = errors.New("passwords cannot be the same")
-	ErrEmailCannotSame            = errors.New("email cannot be the same")
-	ErrUsernameCannotSame         = errors.New("username cannot be the same")
 	ErrNothingHasChanged          = errors.New("nothing has changed")
 )
 
@@ -156,7 +154,6 @@ func (u *User) GetByID(ctx context.Context, userID int) (*model.User, error) {
 		}
 	}
 
-	user.Password = ""
 	return &user, nil
 }
 
@@ -168,7 +165,6 @@ func (u *User) GetByUsername(ctx context.Context, username string) (*model.User,
 		}
 	}
 
-	user.Password = ""
 	return &user, nil
 }
 
