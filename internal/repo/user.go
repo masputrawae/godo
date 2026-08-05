@@ -2,10 +2,16 @@ package repo
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"godo/internal/model"
 	"log/slog"
 
 	sq "github.com/Masterminds/squirrel"
+)
+
+var (
+	ErrDataNotFound = errors.New("data not found")
 )
 
 type User struct {
@@ -56,6 +62,32 @@ func (u *User) FindByUsername(ctx context.Context, username string) (*model.User
 	return u.selectOne(ctx, sq.Eq{"username": username})
 }
 
+// =====: FIND USER BY EMAIL
+func (u *User) FindByEmail(ctx context.Context, email string) (*model.User, error) {
+	return u.selectOne(ctx, sq.Eq{"email": email})
+}
+
+// =====: CHECKING DUPLICATION DATA
+func (u *User) ExistsByEmail(ctx context.Context, email string) (bool, error) {
+	var exists bool
+	err := u.db.
+		QueryRowContext(
+			ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE email = ?)", email,
+		).
+		Scan(&exists)
+	return exists, err
+}
+
+func (u *User) ExistsByUsername(ctx context.Context, username string) (bool, error) {
+	var exists bool
+	err := u.db.
+		QueryRowContext(
+			ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)", username,
+		).
+		Scan(&exists)
+	return exists, err
+}
+
 // =====: HELPERS
 // 1. scan
 func (u *User) scan(sc interface{ Scan(dest ...any) error }) (*model.User, error) {
@@ -66,11 +98,17 @@ func (u *User) scan(sc interface{ Scan(dest ...any) error }) (*model.User, error
 
 // 2. select one
 func (u *User) selectOne(ctx context.Context, eq sq.Eq) (*model.User, error) {
-	return u.scan(
+	user, err := u.scan(
 		u.sq.
 			Select(u.columns...).
 			From(u.table).
 			Where(eq).
 			QueryRowContext(ctx),
 	)
+
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrDataNotFound
+	}
+
+	return user, err
 }

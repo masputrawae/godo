@@ -2,11 +2,9 @@ package repo
 
 import (
 	"database/sql"
-	"errors"
 	"log/slog"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/mattn/go-sqlite3"
 )
 
 type Repo struct {
@@ -23,14 +21,4 @@ func New(db *sql.DB) *Repo {
 		db: db,
 		sq: sq.StatementBuilder.PlaceholderFormat(sq.Question).RunWith(db),
 	}
-}
-
-func (r *Repo) IsSQLError(err error, code sqlite3.ErrNo) bool {
-	var sqliteErr sqlite3.Error
-
-	if errors.As(err, &sqliteErr) {
-		return sqliteErr.Code == code
-	}
-
-	return false
 }
