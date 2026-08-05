@@ -32,12 +32,12 @@ func (u *User) Create(ctx context.Context, p model.UserCreatePayload) (int, erro
 }
 
 func (u *User) FindByID(ctx context.Context, userID int) (model.User, error) {
-	q := "SELECT username, email, password FROM users WHERE id = ?"
+	q := "SELECT id, username, email, password FROM users WHERE id = ?"
 	return u.scan(u.db.QueryRowContext(ctx, q, userID))
 }
 
 func (u *User) FindByUsername(ctx context.Context, username string) (model.User, error) {
-	q := "SELECT username, email, password FROM users WHERE username = ?"
+	q := "SELECT id, username, email, password FROM users WHERE username = ?"
 	return u.scan(u.db.QueryRowContext(ctx, q, username))
 }
 
@@ -72,6 +72,6 @@ func (u *User) Delete(ctx context.Context, userID int) error {
 
 func (u *User) scan(s interface{ Scan(dest ...any) error }) (model.User, error) {
 	var r model.User
-	err := s.Scan(&r.Username, &r.Email, &r.Password)
+	err := s.Scan(&r.ID, &r.Username, &r.Email, &r.Password)
 	return r, err
 }
