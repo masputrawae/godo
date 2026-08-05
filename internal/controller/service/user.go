@@ -17,3 +17,7 @@ var (
 type User struct {
 	user *repo.User
 }
+
+func NewUser(user *repo.User) *User {
+	return &User{user: user}
+}
