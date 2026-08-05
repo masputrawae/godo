@@ -67,3 +67,9 @@ type TodoUpdatePayload struct {
 	StatusID   *int
 	PriorityID *int
 }
+
+type Session struct {
+	UserID    int
+	CSRFToken string
+	Expires   *time.Time
+}
