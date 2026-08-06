@@ -5,13 +5,18 @@ import (
 	"database/sql"
 	"errors"
 	"godo/internal/model"
-	"log/slog"
+	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 )
 
 var (
-	ErrDataNotFound = errors.New("data not found")
+	ErrUniqueUsername  = errors.New("unique username")
+	ErrUniqueEmail     = errors.New("unique email")
+	ErrNotNullUsername = errors.New("not null username")
+	ErrNotNullPassword = errors.New("not null password")
+	ErrNotNullEmail    = errors.New("not null email")
+	ErrUserNotFound    = errors.New("user not found")
 )
 
 type User struct {
@@ -20,6 +25,8 @@ type User struct {
 
 func (u *Repo) NewUser() *User {
 	repo := &Repo{
+		db:    u.db,
+		sq:    u.sq,
 		table: "users",
 		columns: []string{
 			"id", "username", "password",
@@ -31,8 +38,6 @@ func (u *Repo) NewUser() *User {
 
 // =====: CREATE USER
 func (u *User) Create(ctx context.Context, p model.UserCreatePayload) (*int, error) {
-	slog.Info("⏳ create user")
-
 	res, err := u.sq.
 		Insert(u.table).
 		Columns("username", "password", "email").
@@ -48,7 +53,6 @@ func (u *User) Create(ctx context.Context, p model.UserCreatePayload) (*int, err
 		return nil, err
 	}
 
-	slog.Info("✅ successfully saved to the database")
 	return new(int(id)), nil
 }
 
@@ -65,27 +69,6 @@ func (u *User) FindByUsername(ctx context.Context, username string) (*model.User
 // =====: FIND USER BY EMAIL
 func (u *User) FindByEmail(ctx context.Context, email string) (*model.User, error) {
 	return u.selectOne(ctx, sq.Eq{"email": email})
-}
-
-// =====: CHECKING DUPLICATION DATA
-func (u *User) ExistsByEmail(ctx context.Context, email string) (bool, error) {
-	var exists bool
-	err := u.db.
-		QueryRowContext(
-			ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE email = ?)", email,
-		).
-		Scan(&exists)
-	return exists, err
-}
-
-func (u *User) ExistsByUsername(ctx context.Context, username string) (bool, error) {
-	var exists bool
-	err := u.db.
-		QueryRowContext(
-			ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)", username,
-		).
-		Scan(&exists)
-	return exists, err
 }
 
 // =====: HELPERS
@@ -105,10 +88,40 @@ func (u *User) selectOne(ctx context.Context, eq sq.Eq) (*model.User, error) {
 			Where(eq).
 			QueryRowContext(ctx),
 	)
+	return user, err
+}
 
-	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrDataNotFound
+// =====: TRANSLATE ERRORS
+func (r *User) TranslateError(err error) error {
+	if err == nil {
+		return nil
 	}
 
-	return user, err
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrUserNotFound
+	}
+
+	se := strings.ToLower(err.Error())
+
+	if strings.Contains(se, "unique") {
+		switch {
+		case strings.Contains(se, "users.username"):
+			return ErrUniqueUsername
+		case strings.Contains(se, "users.email"):
+			return ErrUniqueEmail
+		}
+	}
+
+	if strings.Contains(se, "not null") {
+		switch {
+		case strings.Contains(se, "users.username"):
+			return ErrNotNullUsername
+		case strings.Contains(se, "users.password"):
+			return ErrNotNullPassword
+		case strings.Contains(se, "users.email"):
+			return ErrNotNullEmail
+		}
+	}
+
+	return err
 }

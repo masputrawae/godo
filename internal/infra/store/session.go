@@ -2,11 +2,8 @@ package store
 
 import (
 	"godo/internal/model"
-	"net/http"
 	"sync"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 var sessions = make(map[string]model.Session)
@@ -14,13 +11,13 @@ var sessions = make(map[string]model.Session)
 type Session struct {
 	sessions map[string]model.Session
 	expires  time.Time
-	maxAge   time.Duration
 	mu       sync.RWMutex
 }
 
-func New() *Session {
+func NewSession() *Session {
 	return &Session{
 		sessions: sessions,
+		expires:  time.Now().Add(24 * time.Hour),
 	}
 }
 
@@ -47,42 +44,4 @@ func (s *Session) GetSession(sessionID string) (model.Session, bool) {
 	s.mu.RUnlock()
 
 	return session, exist
-}
-
-func (s *Session) SetCookie(w http.ResponseWriter, sessionID string) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	http.SetCookie(w, &http.Cookie{
-		Name:     "session",
-		Value:    sessionID,
-		Path:     "/",
-		Expires:  s.expires,
-		MaxAge:   int(s.maxAge),
-		Secure:   false,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-	})
-}
-
-func (s *Session) DeleteCookie(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name:   "session",
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1,
-	})
-}
-
-func (s *Session) ParseCTX(r *http.Request) (model.Session, bool) {
-	session, ok := r.Context().Value("session").(model.Session)
-	return session, ok
-}
-
-func (s *Session) GenID() (string, error) {
-	id, err := uuid.NewV7()
-	if err != nil {
-		return err
-	}
-
-	return id.String(), nil
 }

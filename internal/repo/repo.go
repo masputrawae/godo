@@ -2,7 +2,6 @@ package repo
 
 import (
 	"database/sql"
-	"log/slog"
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -15,8 +14,6 @@ type Repo struct {
 }
 
 func New(db *sql.DB) *Repo {
-	slog.Info("🚩 init repo")
-
 	return &Repo{
 		db: db,
 		sq: sq.StatementBuilder.PlaceholderFormat(sq.Question).RunWith(db),
