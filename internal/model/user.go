@@ -12,21 +12,20 @@ type User struct {
 	UpdatedAt time.Time
 }
 
-type UserCreatePayload struct {
+type UserPayloadCreate struct {
 	Email    string
 	Username string
 	Password string
 }
 
-type UserLoginPayload struct {
+type UserPayloadLogin struct {
 	Username string
 	Password string
 }
 
-// =====: Session
-type Session struct {
-	ID        string
-	UserID    int
-	CSRFToken string
-	ExpiresAt time.Time
+type UserPayloadUpdate struct {
+	ID       int
+	Email    *string
+	Username *string
+	Password *string
 }

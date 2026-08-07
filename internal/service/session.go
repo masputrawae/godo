@@ -4,6 +4,7 @@ import (
 	"context"
 	"godo/internal/model"
 	"godo/internal/repo"
+	"log"
 	"net/http"
 	"time"
 
@@ -11,66 +12,94 @@ import (
 )
 
 type Session struct {
-	session *repo.Session
-	ttl     time.Duration
+	rpSession  *repo.Session
+	TTL        time.Duration
+	CookieName string
 }
 
-// =====: Session
-func NewSession(session *repo.Session) *Session {
-	return &Session{
-		session: session,
-		ttl:     1 * time.Minute,
-	}
+func NewSession(rpSession *repo.Session, TTL time.Duration, CookieName string) *Session {
+	return &Session{rpSession, TTL, CookieName}
 }
 
-// =====: Set Session
+// =====: Set
 func (s *Session) Set(ctx context.Context, w http.ResponseWriter, userID int) error {
-	uID, err := uuid.NewV7()
+	expires := time.Now().Add(s.TTL)
+	maxAge := int(s.TTL.Seconds())
+
+	sessionID, err := uuid.NewV7()
 	if err != nil {
 		return err
 	}
 
-	sessionID := uID.String()
-
-	uID, err = uuid.NewV7()
+	csrfToken, err := uuid.NewV7()
 	if err != nil {
 		return err
 	}
 
-	csrfToken := uID.String()
-
-	expires := time.Now().Add(s.ttl)
 	http.SetCookie(w, &http.Cookie{
-		Name:     "session",
-		Value:    sessionID,
+		Name:     s.CookieName,
+		Value:    sessionID.String(),
 		Path:     "/",
 		Expires:  expires,
-		MaxAge:   int(s.ttl.Seconds()),
+		MaxAge:   maxAge,
 		Secure:   false,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	return s.session.Create(ctx, model.Session{
-		ID:        sessionID,
-		CSRFToken: csrfToken,
-		ExpiresAt: expires,
+	return s.rpSession.Create(ctx, model.Session{
+		ID:        sessionID.String(),
+		CSRFToken: csrfToken.String(),
 		UserID:    userID,
+		ExpiresAt: expires,
 	})
 }
 
-// =====: Get Session
-func (s *Session) Get(ctx context.Context, sessionID string) (model.Session, error) {
-	return s.session.FindByID(ctx, sessionID)
+// =====: Get
+func (s *Session) Get(ctx context.Context, sessionID string) (*model.Session, error) {
+	session, err := s.rpSession.FindByID(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	if session.ExpiresAt.Before(time.Now()) {
+		return nil, s.rpSession.DeleteByExpires(ctx)
+	}
+
+	return &session, nil
 }
 
-// =====: Delete Session
-func (s *Session) Delete(ctx context.Context, w http.ResponseWriter, sessionID string) error {
+// =====: Parse Ctx
+func (s *Session) ParseCtx(r *http.Request) (*model.Session, bool) {
+	session, ok := r.Context().Value(s.CookieName).(model.Session)
+	return &session, ok
+}
+
+// =====: Remove
+func (s *Session) Remove(ctx context.Context, w http.ResponseWriter, sessionID string) error {
 	http.SetCookie(w, &http.Cookie{
-		Name:   "session",
+		Name:   s.CookieName,
 		Value:  "",
 		Path:   "/",
 		MaxAge: -1,
 	})
-	return s.session.DeleteByID(ctx, sessionID)
+	return s.rpSession.DeleteByID(ctx, sessionID)
+}
+
+// =====: Auto Clean
+func (s *Session) AutoClean(ctx context.Context, ticker *time.Ticker) {
+	if ticker == nil {
+		ticker = time.NewTicker(s.TTL)
+	}
+
+	for {
+		select {
+		case <-ticker.C:
+			if err := s.rpSession.DeleteByExpires(ctx); err != nil {
+				log.Println("auto clean session error:", err)
+			}
+		case <-ctx.Done():
+			log.Println("auto clean session stop")
+		}
+	}
 }

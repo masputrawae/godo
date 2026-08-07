@@ -2,54 +2,46 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"godo/internal/handler"
-	"godo/internal/infra/db"
 	"godo/internal/middleware"
 	"godo/internal/repo"
 	"godo/internal/service"
-	"log"
 	"net/http"
 	"time"
 )
 
-func autoCleanSession(session *repo.Session, ticker *time.Ticker) {
-	for range ticker.C {
-		if err := session.DeleteByExpires(context.Background()); err != nil {
-			log.Println(err)
-		}
-	}
-}
-
 func main() {
-	ticker := time.NewTicker(30 * time.Second)
+	db := &sql.DB{}
 
-	// =====: Storage
-	db := db.Open("app.db")
-	defer db.Close()
+	// ==========: Repositories
+	rpUser := repo.NewUser(db)
+	rpTodo := repo.NewTodo(db)
+	rpStatus := repo.NewStatus(db)
+	rpPriority := repo.NewPriority(db)
+	rpSession := repo.NewSession(db)
 
-	// =====: Repositories
-	rp := repo.New(db)
-	rpUser := repo.NewUser(rp)
-	rpSession := repo.NewSession(rp)
+	// ==========: Services
+	svUser := service.NewUser(rpUser)
+	svSession := service.NewSession(rpSession, 1*time.Minute, "session")
+	svTodo := service.NewTodo(rpTodo, rpPriority, rpStatus)
 
-	// =====: auto clean session
-	go autoCleanSession(rpSession, ticker)
+	// ==========: Auto Clean (sessions)
+	go svSession.AutoClean(context.Background(), nil)
 
-	// =====: Services
-	svAuth := service.NewAuth(rpUser)
-	svSession := service.NewSession(rpSession)
+	// ==========: Handler
+	handler := handler.New(svUser, svSession, svTodo)
 
-	// =====: Middlewares
+	// ==========: Middleware
 	mw := middleware.New(svSession)
 
-	// =====: Handlers
-	hlAuth := handler.NewAuth(svAuth, svSession)
-
-	// =====: Mux
+	// ==========: Mux
 	mux := http.NewServeMux()
+	mux.HandleFunc("/", mw.SessionAuth(handler.Root))
+	mux.HandleFunc("/logout", mw.SessionAuth(handler.Logout))
 
-	mux.HandleFunc("/login", hlAuth.Login)
-	mux.HandleFunc("/register", hlAuth.Register)
+	mux.HandleFunc("/login", handler.Login)
+	mux.HandleFunc("/register", handler.Register)
 
-	log.Fatal(http.ListenAndServe(":8080", mw.Logger(mux)))
+	http.ListenAndServe(":8080", mux)
 }

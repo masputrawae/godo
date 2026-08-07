@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"database/sql"
 	"godo/internal/model"
 	"time"
 
@@ -9,25 +10,26 @@ import (
 )
 
 type Session struct {
-	*repo
+	db      *sql.DB
+	sq      sq.StatementBuilderType
+	table   string
+	columns []string
 }
 
-// =====: Session
-func NewSession(r *repo) *Session {
-	rp := &repo{
-		db:      r.db,
-		sq:      r.sq,
+func NewSession(db *sql.DB) *Session {
+	return &Session{
+		db:      db,
+		sq:      sq.StatementBuilder.PlaceholderFormat(sq.Question).RunWith(db),
 		table:   "sessions",
 		columns: []string{"id", "user_id", "csrf_token", "expires_at"},
 	}
-	return &Session{rp}
 }
 
 // =====: Create
 func (s *Session) Create(ctx context.Context, p model.Session) error {
 	_, err := s.sq.
 		Insert(s.table).
-		Columns(s.columns...).
+		Columns("id", "user_id", "csrf_token", "expires_at").
 		Values(p.ID, p.UserID, p.CSRFToken, p.ExpiresAt).
 		ExecContext(ctx)
 	return err
@@ -35,12 +37,20 @@ func (s *Session) Create(ctx context.Context, p model.Session) error {
 
 // =====: Delete by ID
 func (s *Session) DeleteByID(ctx context.Context, id string) error {
-	return s.del(ctx, sq.Eq{"id": id})
+	_, err := sq.
+		Delete(s.table).
+		Where(sq.Eq{"id": id}).
+		ExecContext(ctx)
+	return err
 }
 
 // =====: Delete by Expires
 func (s *Session) DeleteByExpires(ctx context.Context) error {
-	return s.del(ctx, sq.Lt{"expires_at": time.Now()})
+	_, err := sq.
+		Delete(s.table).
+		Where(sq.LtOrEq{"expires_at": time.Now()}).
+		ExecContext(ctx)
+	return err
 }
 
 // =====: Find by ID
@@ -53,14 +63,4 @@ func (s *Session) FindByID(ctx context.Context, id string) (model.Session, error
 		QueryRowContext(ctx).
 		Scan(&r.ID, &r.UserID, &r.CSRFToken, &r.ExpiresAt)
 	return r, err
-}
-
-// =====: Helpers
-// 1. delete
-func (s *Session) del(ctx context.Context, args any) error {
-	_, err := s.sq.
-		Delete(s.table).
-		Where(args).
-		ExecContext(ctx)
-	return err
 }
