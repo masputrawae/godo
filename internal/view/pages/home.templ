@@ -1,8 +1,0 @@
-package pages
-
-import "godo/internal/model"
-
-templ Home(user model.User) {
-	<h1>Hi { user.Username }</h1>
-	<a href="/logout" hx-get="/logout" hx-target="body">Logout</a>
-}
