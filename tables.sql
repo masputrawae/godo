@@ -1,18 +1,10 @@
 -- sqlite3
 PRAGMA foreign_keys = ON;
 
-DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS todos;
 DROP TABLE IF EXISTS statuses;
 DROP TABLE IF EXISTS priorities;
-
-CREATE TABLE IF NOT EXISTS sessions (
-  id TEXT PRIMARY KEY,
-  user_id int NOT NULL,
-  csrf_token TEXT NOT NULL,
-  expires_at TIMESTAMP NOT NULL
-);
 
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

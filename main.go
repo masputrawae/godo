@@ -1,16 +1,21 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-	"time"
+	"godo/internal/infra/database"
 )
 
-func greet(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello World! %s", time.Now())
-}
-
 func main() {
-	http.HandleFunc("/", greet)
-	http.ListenAndServe(":8080", nil)
+	// validator
+	// validate := validator.New(validator.WithRequiredStructEnabled())
+
+	// database (sqlite3)
+	db := database.Open("app.db")
+	defer db.Close()
+
+	// repositories
+	// rpUser := repo.NewUser(db)
+
+	// services
+	// svUser := service.NewUser(rpUser)
+
 }
