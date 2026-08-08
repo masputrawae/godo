@@ -23,7 +23,7 @@ func (m *Middleware) SessionAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), m.svSession.CookieName, &session)
+		ctx := context.WithValue(r.Context(), m.svSession.CookieName, session)
 		next(w, r.WithContext(ctx))
 	}
 }

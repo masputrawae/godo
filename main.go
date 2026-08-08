@@ -2,17 +2,18 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"godo/internal/handler"
+	"godo/internal/infra/database"
 	"godo/internal/middleware"
 	"godo/internal/repo"
 	"godo/internal/service"
+	"log"
 	"net/http"
 	"time"
 )
 
 func main() {
-	db := &sql.DB{}
+	db := database.Open("app.db")
 
 	// ==========: Repositories
 	rpUser := repo.NewUser(db)
@@ -43,5 +44,6 @@ func main() {
 	mux.HandleFunc("/login", handler.Login)
 	mux.HandleFunc("/register", handler.Register)
 
-	http.ListenAndServe(":8080", mux)
+	log.Println("server running on :8080")
+	http.ListenAndServe(":8080", mw.Logger(mux))
 }

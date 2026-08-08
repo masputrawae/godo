@@ -1,0 +1,27 @@
+package pages
+
+templ Login() {
+	<form hx-post="/login" hx-target="body" hx-push-url="true">
+		@Input("text", "username", "username", "Username")
+		@Input("password", "password", "password", "Password")
+		<button type="submit">Login</button>
+		<a href="/register" hx-get="/register" hx-target="body" hx-push-url="true">Register</a>
+	</form>
+}
+
+templ Register() {
+	<form hx-post="/register" hx-target="body" hx-push-url="true">
+		@Input("email", "email", "email", "Email")
+		@Input("text", "username", "username", "Username")
+		@Input("password", "password", "password", "Password")
+		<button type="submit">Register</button>
+		<a href="/login" hx-get="/login" hx-target="body" hx-push-url="true">Login</a>
+	</form>
+}
+
+templ Input(typ, id, name, label string) {
+	<div>
+		<label for={ id }>{ label }</label>
+		<input type={ typ } name={ name } id={ id } required/>
+	</div>
+}

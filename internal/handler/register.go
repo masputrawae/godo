@@ -2,7 +2,9 @@ package handler
 
 import (
 	"godo/internal/model"
+	"godo/internal/view"
 	"net/http"
+	"strconv"
 )
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
@@ -32,5 +34,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case http.MethodGet:
+		isHXRequest, _ := strconv.ParseBool(r.Header.Get("HX-Request"))
+		view.Register(isHXRequest).Render(r.Context(), w)
 	}
 }

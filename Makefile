@@ -1,7 +1,10 @@
+generate:
+	@templ generate
+
 build:
 	@go build -o ./bin/app
 
-run: build
+run: generate build
 	@./bin/app
 
 test:

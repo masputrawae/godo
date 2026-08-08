@@ -20,7 +20,7 @@ func NewUser(db *sql.DB) *User {
 		db:      db,
 		sq:      sq.StatementBuilder.PlaceholderFormat(sq.Question).RunWith(db),
 		table:   "users",
-		columns: []string{"id", "email", "username", "password", "crated_at", "updated_at"},
+		columns: []string{"id", "email", "username", "password", "created_at", "updated_at"},
 	}
 }
 

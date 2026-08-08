@@ -1,0 +1,35 @@
+package view
+
+import "godo/internal/view/layouts"
+import "godo/internal/view/pages"
+import "godo/internal/model"
+
+templ Login(isHX bool) {
+	if isHX {
+		@pages.Login()
+	} else {
+		@layouts.Base() {
+			@pages.Login()
+		}
+	}
+}
+
+templ Register(isHX bool) {
+	if isHX {
+		@pages.Register()
+	} else {
+		@layouts.Base() {
+			@pages.Register()
+		}
+	}
+}
+
+templ Home(isHX bool, user model.User) {
+	if isHX {
+		@pages.Home(user)
+	} else {
+		@layouts.Base() {
+			@pages.Home(user)
+		}
+	}
+}

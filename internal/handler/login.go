@@ -2,7 +2,9 @@ package handler
 
 import (
 	"godo/internal/model"
+	"godo/internal/view"
 	"net/http"
+	"strconv"
 )
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -31,8 +33,10 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
+		w.Header().Set("HX-Replace-Url", "/")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	case http.MethodGet:
-
+		isHXRequest, _ := strconv.ParseBool(r.Header.Get("HX-Request"))
+		view.Login(isHXRequest).Render(r.Context(), w)
 	}
 }

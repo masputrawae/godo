@@ -77,7 +77,7 @@ func (u *User) Login(ctx context.Context, p model.UserPayloadLogin) (*model.User
 		return nil, err
 	}
 
-	if password.Check(user.Password, p.Password) {
+	if !password.Check(user.Password, p.Password) {
 		return nil, ErrIncorrectUsernameOrPassword
 	}
 

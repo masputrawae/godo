@@ -37,7 +37,7 @@ func (s *Session) Create(ctx context.Context, p model.Session) error {
 
 // =====: Delete by ID
 func (s *Session) DeleteByID(ctx context.Context, id string) error {
-	_, err := sq.
+	_, err := s.sq.
 		Delete(s.table).
 		Where(sq.Eq{"id": id}).
 		ExecContext(ctx)
@@ -46,7 +46,7 @@ func (s *Session) DeleteByID(ctx context.Context, id string) error {
 
 // =====: Delete by Expires
 func (s *Session) DeleteByExpires(ctx context.Context) error {
-	_, err := sq.
+	_, err := s.sq.
 		Delete(s.table).
 		Where(sq.LtOrEq{"expires_at": time.Now()}).
 		ExecContext(ctx)

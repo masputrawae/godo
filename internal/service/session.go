@@ -71,8 +71,8 @@ func (s *Session) Get(ctx context.Context, sessionID string) (*model.Session, er
 
 // =====: Parse Ctx
 func (s *Session) ParseCtx(r *http.Request) (*model.Session, bool) {
-	session, ok := r.Context().Value(s.CookieName).(model.Session)
-	return &session, ok
+	session, ok := r.Context().Value(s.CookieName).(*model.Session)
+	return session, ok
 }
 
 // =====: Remove
